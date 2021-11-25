@@ -1,0 +1,47 @@
+#! /usr/bin/bash
+set -e
+id=$1
+
+function check_ec2_instance_id() {
+    if echo "$1" | grep -E '^i-[a-zA-Z0-9]{8,}' > /dev/null; then 
+           echo "Correct Instance ID provided , thank you"
+           return 0
+    else 
+          echo "Opps !! Incorrect Instance ID provided !!"
+          return 1
+    fi
+}
+
+function check_start_instance_id () {
+    aws ec2 start-instances --instance-ids $1
+}
+
+function check_stop_instance_id () {
+    aws ec2 stop-instances --instance-ids $1
+}
+
+
+function check_status_instance_id() {
+    aws ec2 describe-instances --instance-ids $1 --query "Reservations[].Instances[].State.Name" --output text
+}
+
+function main(){
+    check_ec2_instance_id $1
+    echo " Instance Id provided is $1"
+    echo "checking status of the Instance $1"
+    check_status_instance_id $1
+    status=$(check_status_instance_id $1)
+
+    if [ "$status" = "running" ]; then
+    echo " I am stopping the instance now"
+    check_stop_instance_id $1
+    echo " instance has been stopped suucesfully"
+    else
+    echo " I am starting the instance "
+    check_start_instance_id $1
+    echo "instance has been started suucesfully"
+    fi 
+}
+
+main $1
+
